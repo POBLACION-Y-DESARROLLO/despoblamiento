@@ -8,9 +8,12 @@ library(factoextra)
 library(funModeling)
 library(GGally)
 library(DataExplorer)
+library(ggcorrheatmap)
 
 # 2. CARGA DE DATOS -------------------------------------------------------
-despoblamiento <- read.xlsx("data/despoblacion.xlsx")
+despoblamiento <- read.xlsx("data/despoblacion.xlsx") %>% 
+  mutate(SUP_KM2 = ifelse(is.na(SUP_KM2), 0, SUP_KM2))
+
 despoblamiento |> df_status()
 
 
@@ -28,7 +31,7 @@ despoblamiento_tidy <- despoblamiento |>
     #DEPARTAMENTO,
     #PROVINCIA,
     #DISTRITO,
-    TASA_MIGRACION_NETA,
+    T_MIGRACION_NETA,
     TGF,
     TD_0_14,
     TD_60_MAS,
@@ -36,15 +39,20 @@ despoblamiento_tidy <- despoblamiento |>
     TCAC_2017_2024,
     IVIA,
     POBREZA_2018,
-    #DENSIDAD,
+    DENSIDAD,
     ALTITUD,
     PER_AGUA,
     PER_DESAGUE,
-    PER_ELECTRICIDAD
+    PER_ELECTRICIDAD,
+    PER_RURAL,
+    SUP_KM2
   ) |> 
   mutate(
     across(where(is.numeric), ~ as.numeric(scale(.)))
   )
+
+despoblamiento_tidy |> write.xlsx("salidas/despoblamienot_std.xlsx")
+
 
 despoblamiento_tidy |> view()
 despoblamiento_tidy |> plot_correlation()
@@ -56,9 +64,31 @@ despoblamiento_tidy |> ggcorr(
                               color = "black",
                               label_color = 1,
                               hjust = 1,
-                              palette = "PuOr" )
+                              palette = "PuOr"
+                              )
 
 
+despoblamiento_tidy %>%
+  select(where(is.numeric)) %>%
+  ggcorrhm(
+    layout = "bottomright",
+    cell_labels = TRUE,
+    cell_label_col = "black",
+    cell_label_size = 3,
+    cluster_rows = FALSE,
+    cluster_cols = FALSE,
+    include_diag = FALSE,
+    show_names_diag = TRUE,
+    show_names_x = TRUE,
+    show_names_y = FALSE   # 🔹 Oculta los nombres en el eje Y
+  ) +
+  scale_fill_viridis_c(option = "A", direction = -1) +
+  ggtitle("Matriz de Correlaciones") +
+  theme(
+    axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1) # 🔹 Rotar etiquetas para mejor lectura
+  )
+
+  
 
 # 4. ELEGIR EL NÚMERO DE CLUSTERS -----------------------------------------
 
