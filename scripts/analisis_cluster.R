@@ -12,7 +12,17 @@ library(ggcorrheatmap)
 
 # 2. CARGA DE DATOS -------------------------------------------------------
 despoblamiento <- read.xlsx("data/despoblacion.xlsx") %>% 
-  mutate(SUP_KM2 = ifelse(is.na(SUP_KM2), 0, SUP_KM2))
+  mutate(SUP_KM2 = ifelse(is.na(SUPERFICIE_KM2), 0, SUPERFICIE_KM2), 
+         CAT_PCM = case_when(
+             POB_TOT >= 51     & POB_TOT <= 500       ~ "Caserío Mayor",
+             POB_TOT >= 501    & POB_TOT <= 1000      ~ "Pueblo",
+             POB_TOT >= 1001   & POB_TOT <= 2000      ~ "Villa",
+             POB_TOT >= 2001   & POB_TOT <= 20000     ~ "Ciudad - Menor",
+             POB_TOT >= 20001  & POB_TOT <= 100000    ~ "Ciudad - Intermedia",
+             POB_TOT >= 100001 & POB_TOT <= 500000    ~ "Ciudad - Mayor",
+             POB_TOT > 500000                         ~ "Metrópoli Regional",
+             .default = NA)
+         ) |> write.xlsx("salidas/despoblamienot_abs.xlsx")
 
 despoblamiento |> df_status()
 
@@ -31,7 +41,8 @@ despoblamiento_tidy <- despoblamiento |>
     #DEPARTAMENTO,
     #PROVINCIA,
     #DISTRITO,
-    T_MIGRACION_NETA,
+    CAT_PCM,
+    TASA_MIGRACION_NETA,
     TGF,
     TD_0_14,
     TD_60_MAS,
@@ -45,7 +56,11 @@ despoblamiento_tidy <- despoblamiento |>
     PER_DESAGUE,
     PER_ELECTRICIDAD,
     PER_RURAL,
-    SUP_KM2
+    SUP_KM2,
+    IPRES,
+    EDU_URB,
+    EDU_RUR,
+    EDU_TOT
   ) |> 
   mutate(
     across(where(is.numeric), ~ as.numeric(scale(.)))
@@ -83,6 +98,43 @@ despoblamiento_tidy %>%
     show_names_y = FALSE   # 🔹 Oculta los nombres en el eje Y
   ) +
   scale_fill_viridis_c(option = "A", direction = -1) +
+  ggtitle("Matriz de Correlaciones") +
+  theme(
+    axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1) # 🔹 Rotar etiquetas para mejor lectura
+  )
+
+# VARIBLES PREDICTORAS ----------------------------------------------------
+
+despoblamiento_tidy |> 
+  transmute(
+    UBIGEO = UBIGEO,
+    TMN       = TASA_MIGRACION_NETA,
+    TGF       = TGF,
+    D_014     = TD_0_14,
+    D_60      = TD_60_MAS,
+    TC_1725   = TCAC_2017_2024,
+    POBRE18   = POBREZA_2018,
+    ALTI      = ALTITUD,
+    DESAGÜE   = PER_DESAGUE,
+    ELECTRI   = PER_ELECTRICIDAD,
+    RURAL     = PER_RURAL,
+    IPRES     = IPRES,
+    EDU_TOT   = EDU_TOT,
+       
+  ) |> select(where(is.numeric)) |> 
+  ggcorrhm(
+    layout = "topright",
+    cell_labels = TRUE,
+    cell_label_col = "black",
+    cell_label_size = 3,
+    cluster_rows = FALSE,
+    cluster_cols = FALSE,
+    include_diag = FALSE,
+    show_names_diag = TRUE,
+    show_names_x = T,
+    show_names_y = F   # 🔹 Oculta los nombres en el eje Y
+  ) +
+  scale_fill_viridis_b(option = "E", direction = -1) +
   ggtitle("Matriz de Correlaciones") +
   theme(
     axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1) # 🔹 Rotar etiquetas para mejor lectura
