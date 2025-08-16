@@ -11,18 +11,21 @@ library(DataExplorer)
 library(ggcorrheatmap)
 
 # 2. CARGA DE DATOS -------------------------------------------------------
-despoblamiento <- read.xlsx("data/despoblacion.xlsx") %>% 
+despoblamiento <- read.xlsx("data/despoblacion.xlsx", sheet = 2) %>% 
   mutate(SUP_KM2 = ifelse(is.na(SUPERFICIE_KM2), 0, SUPERFICIE_KM2), 
          CAT_PCM = case_when(
-             POB_TOT >= 51     & POB_TOT <= 500       ~ "Caserío Mayor",
-             POB_TOT >= 501    & POB_TOT <= 1000      ~ "Pueblo",
-             POB_TOT >= 1001   & POB_TOT <= 2000      ~ "Villa",
-             POB_TOT >= 2001   & POB_TOT <= 20000     ~ "Ciudad - Menor",
-             POB_TOT >= 20001  & POB_TOT <= 100000    ~ "Ciudad - Intermedia",
-             POB_TOT >= 100001 & POB_TOT <= 500000    ~ "Ciudad - Mayor",
-             POB_TOT > 500000                         ~ "Metrópoli Regional",
+             POB_TOT_2025 >= 51     & POB_TOT_2025 <= 500       ~ "Caserío Menor",
+             POB_TOT_2025 >= 501    & POB_TOT_2025 <= 1000      ~ "Caserío Mayor",
+             POB_TOT_2025 >= 1001   & POB_TOT_2025 <= 2000      ~ "Pueblo",
+             POB_TOT_2025 >= 2001   & POB_TOT_2025 <= 5000      ~ "Villa",
+             POB_TOT_2025 >= 5001   & POB_TOT_2025 <= 20000     ~ "Ciudad - Menor",
+             POB_TOT_2025 >= 20001  & POB_TOT_2025 <= 100000    ~ "Ciudad - Intermedia",
+             POB_TOT_2025 >= 100001 & POB_TOT_2025 <= 500000    ~ "Ciudad - Mayor",
+             POB_TOT_2025 > 500000                         ~ "Metrópoli Regional",
              .default = NA)
-         ) |> write.xlsx("salidas/despoblamienot_abs.xlsx")
+  )
+
+despoblamiento |> write.xlsx("salidas/despoblamienot_abs.xlsx")
 
 despoblamiento |> df_status()
 
@@ -38,16 +41,19 @@ despoblamiento |>
 despoblamiento_tidy <- despoblamiento |>
   select(
     UBIGEO,
-    #DEPARTAMENTO,
-    #PROVINCIA,
-    #DISTRITO,
+    DEPARTAMENTO,
+    PROVINCIA,
+    DISTRITO,
+    CAT_SDOT,
     CAT_PCM,
+    CAT_VIDAL,
+    VAR_ABS,
+    VAR_PER,
     TASA_MIGRACION_NETA,
     TGF,
     TD_0_14,
     TD_60_MAS,
     TD_15_59,
-    TCAC_2017_2024,
     IVIA,
     POBREZA_2018,
     DENSIDAD,
@@ -60,7 +66,8 @@ despoblamiento_tidy <- despoblamiento |>
     IPRES,
     EDU_URB,
     EDU_RUR,
-    EDU_TOT
+    EDU_TOT,
+    DEMAGEGON
   ) |> 
   mutate(
     across(where(is.numeric), ~ as.numeric(scale(.)))
@@ -105,7 +112,7 @@ despoblamiento_tidy %>%
 
 # VARIBLES PREDICTORAS ----------------------------------------------------
 
-despoblamiento_tidy |> 
+despoblamiento_tidy_obj <- despoblamiento_tidy |> 
   transmute(
     UBIGEO = UBIGEO,
     TMN       = TASA_MIGRACION_NETA,
@@ -120,8 +127,11 @@ despoblamiento_tidy |>
     RURAL     = PER_RURAL,
     IPRES     = IPRES,
     EDU_TOT   = EDU_TOT,
+    DEMAGE    = DEMAGEGON
        
-  ) |> select(where(is.numeric)) |> 
+  ) 
+
+despoblamiento_tidy_obj |> select(where(is.numeric)) |> 
   ggcorrhm(
     layout = "topright",
     cell_labels = TRUE,
@@ -144,21 +154,21 @@ despoblamiento_tidy |>
 
 # 4. ELEGIR EL NÚMERO DE CLUSTERS -----------------------------------------
 
-fviz_nbclust(despoblamiento_tidy |> select(-UBIGEO), kmeans, method = "wss")
-fviz_nbclust(despoblamiento_tidy |> select(-UBIGEO), kmeans, method = "gap_stat")
+fviz_nbclust(despoblamiento_tidy_obj |> select(-UBIGEO), kmeans, method = "wss")
+fviz_nbclust(despoblamiento_tidy_obj |> select(-UBIGEO), kmeans, method = "gap_stat")
 # k = 6
 
 
 # 4.1 IMPLEMENTAR LA AGRUPACIÓN EN CLUSTERS --------------------------------
 
 set.seed(123)
-k_means <- kmeans(despoblamiento_tidy |> select(-UBIGEO),
-                  centers = 6,  
+k_means <- kmeans(despoblamiento_tidy_obj |> select(-UBIGEO),
+                  centers = 3,  
                   nstart  = 20
 )
 
 
-fviz_cluster(k_means, data = despoblamiento_tidy |> select(-UBIGEO))
+fviz_cluster(k_means, data = despoblamiento_tidy_obj |> select(-UBIGEO))
 
 # 4.2 AGREGAR LOS CLUSTER AL DATASET --------------------------------------
 dependencia_cluster_fe <- dependencia_tidy %>%
