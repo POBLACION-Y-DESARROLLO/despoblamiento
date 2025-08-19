@@ -9,7 +9,7 @@ library(DataExplorer)
 library(ggcorrheatmap)
 library(rstatix)
 library(scales)
-library(psych) " KMO"
+library(psych) #" KMO"
 
 # 2. CARGA DE DATOS -------------------------------------------------------
 despoblamiento <- read.xlsx("data/despoblacion.xlsx", sheet = 2) %>% 
