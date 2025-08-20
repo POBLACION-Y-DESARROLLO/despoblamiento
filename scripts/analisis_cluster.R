@@ -25,10 +25,10 @@ despoblamiento_cluster_fe <- despoblamiento_tidy_obj_scores %>%
 # Asignar nombres a los clusters
 despoblamiento_cluster_fe <- despoblamiento_cluster_fe %>%
   mutate(CLUSTER_NAME = case_when(
-    CLUSTER == 1 ~ "Distritos intermedios, ni muy urbanos ni muy rurales, algo de infraestructura",
-    CLUSTER == 2 ~ "Distritos rurales y despoblados, poca infraestructur",
-    CLUSTER == 3 ~ "Distritos con fuerte despoblamiento, baja urbanización, población joven",
-    CLUSTER == 4 ~ "Distritos urbanos con buena infraestructura y población estable o creciente",
+    CLUSTER == 1 ~ "Despoblamiento envejecido",
+    CLUSTER == 2 ~ "Rural joven en expansión",
+    CLUSTER == 3 ~ "Aglomeración urbana",
+    CLUSTER == 4 ~ "Despoblamiento vulnerable",
   ))
 
 
@@ -74,7 +74,7 @@ fig <- plot_ly(
 ) |> layout(
   scene = list(
     xaxis = list(title = "RC1 (Infraestructura/Urbanización)"),
-    yaxis = list(title = "RC2 (Despoblamiento/Pobreza)"),
+    yaxis = list(title = "RC2 (Despoblamiento/Pobreza/Altitud)"),
     zaxis = list(title = "RC3 (Estructura Demográfica)")
   ),
   legend = list(title = list(text='Cluster'))

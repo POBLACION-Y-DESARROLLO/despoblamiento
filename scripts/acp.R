@@ -86,7 +86,7 @@ despoblamiento_tidy <- despoblamiento |>
     DEMAGEGON
   ) |> 
   mutate(
-    across(where(is.numeric), ~ rescale(., to = c(0, 1)))
+    across(where(is.numeric), ~ scales::rescale(., to = c(0, 1)))
   )
 
 #despoblamiento_tidy |> write.xlsx("salidas/despoblamienot_std.xlsx")
